@@ -28,21 +28,24 @@ class EmbeddingService:
             return np.asarray(vectors, dtype=np.float32)
 
         return np.vstack([self._hash_embedding(text) for text in texts]).astype(np.float32)
+    
+    def _load_model(self) :
+        return None
 
-    def _load_model(self) -> object | None:
-        if self._model is not None:
-            return self._model
-        if self._model_attempted:
-            return None
-        self._model_attempted = True
-        try:
-            from sentence_transformers import SentenceTransformer
+    # def _load_model(self) -> object | None:
+    #     if self._model is not None:
+    #         return self._model
+    #     if self._model_attempted:
+    #         return None
+    #     self._model_attempted = True
+    #     try:
+    #         from sentence_transformers import SentenceTransformer
 
-            self._model = SentenceTransformer(self.model_name)
-            return self._model
-        except Exception as exc:
-            logger.warning("SentenceTransformer unavailable, using deterministic fallback embeddings: %s", exc)
-            return None
+    #         self._model = SentenceTransformer(self.model_name)
+    #         return self._model
+    #     except Exception as exc:
+    #         logger.warning("SentenceTransformer unavailable, using deterministic fallback embeddings: %s", exc)
+    #         return None
 
     @staticmethod
     @lru_cache(maxsize=4096)

@@ -1,0 +1,110 @@
+[
+  {
+    "name": "Occupational Personality Questionnaire (OPQ)",
+    "url": "https://www.shl.com/products/assessments/personality-assessment/opq/",
+    "test_type": "Personality",
+    "category": "Personality",
+    "duration": "25 minutes",
+    "languages": ["English"],
+    "description": "Measures workplace personality preferences and behavioral style to support hiring, development, and leadership decisions."
+  },
+  {
+    "name": "Verify Interactive - Numerical Reasoning",
+    "url": "https://www.shl.com/products/assessments/cognitive-assessment/verify-interactive/",
+    "test_type": "Cognitive Ability",
+    "category": "Cognitive",
+    "duration": "18 minutes",
+    "languages": ["English"],
+    "description": "Assesses numerical reasoning through interactive business-relevant tasks for roles that require interpreting data and solving quantitative problems."
+  },
+  {
+    "name": "Verify Interactive - Deductive Reasoning",
+    "url": "https://www.shl.com/products/assessments/cognitive-assessment/verify-interactive/",
+    "test_type": "Cognitive Ability",
+    "category": "Cognitive",
+    "duration": "18 minutes",
+    "languages": ["English"],
+    "description": "Measures logical reasoning and the ability to draw sound conclusions from rules and information."
+  },
+  {
+    "name": "Verify Interactive - Inductive Reasoning",
+    "url": "https://www.shl.com/products/assessments/cognitive-assessment/verify-interactive/",
+    "test_type": "Cognitive Ability",
+    "category": "Cognitive",
+    "duration": "18 minutes",
+    "languages": ["English"],
+    "description": "Assesses pattern recognition and abstract reasoning for roles requiring problem solving with unfamiliar information."
+  },
+  {
+    "name": "Verify G+",
+    "url": "https://www.shl.com/products/assessments/cognitive-assessment/verify-g-plus/",
+    "test_type": "Cognitive Ability",
+    "category": "Cognitive",
+    "duration": "36 minutes",
+    "languages": ["English"],
+    "description": "Provides a broad cognitive ability measure across numerical, deductive, and inductive reasoning."
+  },
+  {
+    "name": "SHL Coding Interview",
+    "url": "https://www.shl.com/products/assessments/skills-assessment/coding-interview/",
+    "test_type": "Skills",
+    "category": "Technical Skills",
+    "duration": "60 minutes",
+    "languages": ["English"],
+    "description": "Evaluates software engineering candidates using coding exercises and technical problem-solving tasks."
+  },
+  {
+    "name": "SHL Coding Simulation",
+    "url": "https://www.shl.com/products/assessments/skills-assessment/coding-simulation/",
+    "test_type": "Skills",
+    "category": "Technical Skills",
+    "duration": "45 minutes",
+    "languages": ["English"],
+    "description": "Measures programming capability in a practical simulation for developer and technical hiring."
+  },
+  {
+    "name": "Situational Judgement Test",
+    "url": "https://www.shl.com/products/assessments/behavioral-assessment/situational-judgement-test/",
+    "test_type": "Behavioral",
+    "category": "Behavioral",
+    "duration": "25 minutes",
+    "languages": ["English"],
+    "description": "Presents workplace scenarios to assess judgement, behavior, and fit for role-relevant situations."
+  },
+  {
+    "name": "Motivation Questionnaire (MQ)",
+    "url": "https://www.shl.com/products/assessments/personality-assessment/motivation-questionnaire/",
+    "test_type": "Motivation",
+    "category": "Personality",
+    "duration": "25 minutes",
+    "languages": ["English"],
+    "description": "Explores motivational drivers and workplace preferences to help predict engagement and fit."
+  },
+  {
+    "name": "Graduate 8.0 Job Focused Assessment",
+    "url": "https://www.shl.com/products/assessments/graduate-assessments/",
+    "test_type": "Graduate",
+    "category": "Graduate",
+    "duration": "35 minutes",
+    "languages": ["English"],
+    "description": "Combines role-relevant measures for early career and graduate hiring decisions."
+  },
+  {
+    "name": "Sales Assessment",
+    "url": "https://www.shl.com/products/assessments/sales-assessments/",
+    "test_type": "Skills",
+    "category": "Sales",
+    "duration": "30 minutes",
+    "languages": ["English"],
+    "description": "Assesses sales potential, behaviors, and role-relevant capabilities for sales hiring."
+  },
+  {
+    "name": "Leadership Assessment",
+    "url": "https://www.shl.com/products/assessments/leadership-assessments/",
+    "test_type": "Leadership",
+    "category": "Leadership",
+    "duration": "40 minutes",
+    "languages": ["English"],
+    "description": "Evaluates leadership potential, management behavior, and readiness for people-leadership roles."
+  }
+]

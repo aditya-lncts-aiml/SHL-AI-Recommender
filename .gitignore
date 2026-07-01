@@ -1,0 +1,34 @@
+# ==========================
+# Python
+# ==========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Pytest
+.pytest_cache/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Evaluation Reports
+evaluation/evaluation_report.json
+evaluation/evaluation_report.md
+
+# Python cache
+*.egg-info/
+dist/
+build/

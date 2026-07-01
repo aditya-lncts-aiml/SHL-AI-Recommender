@@ -1,0 +1,28 @@
+[
+    {
+        "query":"I am hiring a Java developer",
+        "expected":[
+            "SHL Coding Simulation",
+            "SHL Coding Interview"
+        ]
+    },
+    {
+        "query":"Need personality assessment",
+        "expected":[
+            "SHL Occupational Personality Questionnaire (OPQ)"
+        ]
+    },
+    {
+        "query":"Compare OPQ and MQ",
+        "expected":[
+            "SHL Occupational Personality Questionnaire (OPQ)",
+            "SHL Motivational Questionnaire (MQ)"
+        ],
+        "comparison":true
+    },
+    {
+        "query":"Recommend assessment",
+        "expected":[],
+        "clarification":true
+    }
+]

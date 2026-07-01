@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from pyparsing import results
-from torchgen import context
 
 from app.models.request import ChatRequest
 from app.models.response import ChatResponse, Recommendation

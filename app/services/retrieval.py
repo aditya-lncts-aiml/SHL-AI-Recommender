@@ -3,17 +3,24 @@ from __future__ import annotations
 import json
 import logging
 import re
-from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from rapidfuzz import fuzz
+from rank_bm25 import BM25Okapi
 
-from app.services.embeddings import (
-    EmbeddingService,
-    get_embedding_service,
-)
+
+
+EXACT_MATCH_BOOST = 10
+PARTIAL_MATCH_BOOST = 6
+CATEGORY_BOOST = 3
+TYPE_BOOST = 2
+SKILL_BOOST = 2
+
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +28,6 @@ ROOT = Path(__file__).resolve().parents[2]
 
 CATALOG_PATH = ROOT / "app" / "data" / "catalog.json"
 
-INDEX_PATH = ROOT / "app" / "vectorstore" / "faiss.index"
 
 
 # ==========================================================
@@ -106,20 +112,6 @@ class Assessment:
             ]
         )
 
-    def keyword_tokens(self) -> set[str]:
-        """
-        Token set used by keyword search.
-        """
-
-        text = self.search_text().lower()
-
-        return set(
-            re.findall(
-                r"[a-z0-9]+",
-                text,
-            )
-        )
-
     def recommendation_payload(self):
 
         return {
@@ -145,19 +137,6 @@ class SearchResult:
     keyword_score: float = 0.0
 
 
-# ==========================================================
-# Hybrid Score
-# ==========================================================
-
-@dataclass(frozen=True)
-class HybridWeights:
-
-    semantic: float = 0.75
-
-    keyword: float = 0.25
-
-
-DEFAULT_WEIGHTS = HybridWeights()
 
 
 # ==========================================================
@@ -293,36 +272,36 @@ class Retriever:
     def __init__(
         self,
         repository: CatalogRepository | None = None,
-        embedding_service: EmbeddingService | None = None,
-        index_path: Path = INDEX_PATH,
-        weights: HybridWeights = DEFAULT_WEIGHTS,
     ):
 
         self.repository = repository or CatalogRepository()
 
-        self.embedding_service = (
-            embedding_service
-            or get_embedding_service()
-        )
-
-        self.index_path = index_path
-
-        self.weights = weights
 
         # Load catalog once
         self._catalog = self.repository.load()
 
-        # Cached embeddings
-        self._vectors: np.ndarray | None = None
-
-        # Cached FAISS index
-        self._faiss_index = None
-
-        # Cached keyword tokens
-        self._keyword_cache: list[set[str]] = [
-            assessment.keyword_tokens()
+        documents = [
+            assessment.search_text()
             for assessment in self._catalog
         ]
+
+        # TF-IDF
+        self.vectorizer = TfidfVectorizer(
+            stop_words="english"
+        )
+
+        self.tfidf_matrix = self.vectorizer.fit_transform(
+            documents
+        )
+
+        # BM25
+        self.bm25 = BM25Okapi(
+            [
+                doc.lower().split()
+                for doc in documents
+            ]
+        )
+
 
     @property
     def catalog(self) -> list[Assessment]:
@@ -334,117 +313,6 @@ class Retriever:
 
     # ------------------------------------------------------
 
-    def _catalog_vectors(self) -> np.ndarray:
-
-        if self._vectors is not None:
-            return self._vectors
-
-        logger.info(
-            "Generating embeddings for %s assessments...",
-            len(self._catalog),
-        )
-
-        self._vectors = self.embedding_service.encode(
-            [
-                assessment.search_text()
-                for assessment in self._catalog
-            ]
-        ).astype(np.float32)
-
-        # Normalize vectors for cosine similarity
-        try:
-            import faiss
-
-            faiss.normalize_L2(self._vectors)
-
-        except Exception:
-            pass
-
-        return self._vectors
-
-    # ------------------------------------------------------
-
-    def _load_faiss_index(self):
-
-        if self._faiss_index is not None:
-            return self._faiss_index
-
-        if not self.index_path.exists():
-
-            logger.warning(
-                "FAISS index not found. "
-                "Falling back to in-memory retrieval."
-            )
-
-            return None
-
-        try:
-
-            import faiss
-
-            index = faiss.read_index(
-                str(self.index_path)
-            )
-
-            if index.ntotal != len(self._catalog):
-
-                logger.warning(
-                    "Ignoring stale FAISS index "
-                    "(%s vectors, catalog has %s)",
-                    index.ntotal,
-                    len(self._catalog),
-                )
-
-                return None
-
-            self._faiss_index = index
-
-            logger.info(
-                "Loaded FAISS index with %s vectors.",
-                index.ntotal,
-            )
-
-            return self._faiss_index
-
-        except Exception as exc:
-
-            logger.warning(
-                "Unable to load FAISS index: %s",
-                exc,
-            )
-
-            return None
-
-    # ------------------------------------------------------
-
-    @staticmethod
-    def _normalize_query(
-        vector: np.ndarray,
-    ) -> np.ndarray:
-
-        try:
-
-            import faiss
-
-            faiss.normalize_L2(vector)
-
-        except Exception:
-            pass
-
-        return vector
-
-    # ------------------------------------------------------
-
-    @staticmethod
-    def _tokenize(
-        text: str,
-    ) -> list[str]:
-
-        return re.findall(
-            r"[a-z0-9]+",
-            text.lower(),
-        )
-    
 
     def search(
         self,
@@ -473,90 +341,68 @@ class Retriever:
         # Query Embedding
         # --------------------------------------------------
 
-        query_vector = self.embedding_service.encode(
+        query_vector = self.vectorizer.transform(
             [query]
-        ).astype(np.float32)
-
-        query_vector = self._normalize_query(
-            query_vector
         )
 
-        # --------------------------------------------------
-        # Semantic Search
-        # --------------------------------------------------
-
-        semantic_scores = np.zeros(
-            len(self._catalog),
-            dtype=np.float32,
-        )
-
-        faiss_index = self._load_faiss_index()
-
-        if faiss_index is not None:
-
-            scores, indices = faiss_index.search(
-                query_vector,
-                len(self._catalog),
-            )
-
-            for score, idx in zip(
-                scores[0],
-                indices[0],
-            ):
-
-                if 0 <= idx < len(self._catalog):
-                    semantic_scores[idx] = float(score)
-
-        else:
-
-            vectors = self._catalog_vectors()
-
-            semantic_scores = np.dot(
-                vectors,
-                query_vector[0],
-            )
+        semantic_scores = cosine_similarity(
+            query_vector,
+            self.tfidf_matrix,
+        )[0]
 
         # --------------------------------------------------
         # Keyword Search
         # --------------------------------------------------
 
-        query_tokens = Counter(
-            self._tokenize(query)
-        )
 
         keyword_scores = np.zeros(
             len(self._catalog),
             dtype=np.float32,
         )
 
-        normalized_query = query.lower()
+        normalized_query = query.lower().strip()
 
+        bm25_scores = self.bm25.get_scores(
+                re.findall(
+                    r"[a-z0-9]+",
+                    query.lower(),
+                )
+            )
+        if bm25_scores.max() > 0:
+            bm25_scores /= bm25_scores.max()
+
+        fuzzy_scores = np.zeros(
+            len(self._catalog),
+            dtype=np.float32,
+        )
         for idx, assessment in enumerate(
             self._catalog
         ):
 
-            tokens = self._keyword_cache[idx]
 
-            overlap = sum(
-                query_tokens[token]
-                for token in tokens
-                if token in query_tokens
+            
+
+            fuzzy_score = (
+                fuzz.token_set_ratio(
+                    query,
+                    assessment.name,
+                )
+                / 100.0
             )
-
-            score = float(overlap)
+            fuzzy_scores[idx] = fuzzy_score
 
             # ------------------------------------------
             # Exact Name Match
             # ------------------------------------------
 
+            score = bm25_scores[idx]
+
             if assessment.name.lower() == normalized_query:
-                score += 10
-
+                score += EXACT_MATCH_BOOST
             elif assessment.name.lower() in normalized_query:
-                score += 6
-
+                score += PARTIAL_MATCH_BOOST
             elif normalized_query in assessment.name.lower():
-                score += 6
+                score += PARTIAL_MATCH_BOOST
 
             # ------------------------------------------
             # Category Match
@@ -565,7 +411,7 @@ class Retriever:
             if assessment.category:
 
                 if assessment.category.lower() in normalized_query:
-                    score += 3
+                    score += CATEGORY_BOOST
 
             # ------------------------------------------
             # Test Type Match
@@ -574,37 +420,33 @@ class Retriever:
             if assessment.test_type:
 
                 if assessment.test_type.lower() in normalized_query:
-                    score += 2
+                    score += TYPE_BOOST
 
             # ------------------------------------------
             # Description Match
             # ------------------------------------------
 
-            description = assessment.description.lower()
+            description = assessment.search_text().lower()
 
             if "java" in normalized_query and "java" in description:
-                score += 2
+                score += SKILL_BOOST
 
             if "python" in normalized_query and "python" in description:
-                score += 2
+                score += SKILL_BOOST
 
             if "personality" in normalized_query:
-
                 if (
                     "personality" in description
-                    or
-                    "opq" in assessment.name.lower()
+                    or "opq" in assessment.name.lower()
                 ):
-                    score += 3
+                    score += CATEGORY_BOOST
 
             if "cognitive" in normalized_query:
-
                 if (
                     "cognitive" in description
-                    or
-                    "verify" in assessment.name.lower()
+                    or "verify" in assessment.name.lower()
                 ):
-                    score += 3
+                    score += CATEGORY_BOOST
 
             keyword_scores[idx] = score
 
@@ -622,12 +464,14 @@ class Retriever:
         # Hybrid Score
         # --------------------------------------------------
 
+        SEMANTIC_WEIGHT = 0.4
+        KEYWORD_WEIGHT = 0.4
+        FUZZY_WEIGHT = 0.2
+
         final_scores = (
-            self.weights.semantic
-            * semantic_scores
-            +
-            self.weights.keyword
-            * keyword_scores
+            SEMANTIC_WEIGHT * semantic_scores
+            + KEYWORD_WEIGHT * keyword_scores
+            + FUZZY_WEIGHT * fuzzy_scores
         )
 
         ranked = np.argsort(
@@ -649,11 +493,11 @@ class Retriever:
                     ),
 
                     semantic_score=float(
-                        semantic_scores[int(idx)]
+                        semantic_scores[idx]
                     ),
-    
+
                     keyword_score=float(
-                        keyword_scores[int(idx)]
+                        keyword_scores[idx]
                     ),
                 ),
             )
@@ -836,33 +680,33 @@ class Retriever:
             top_k,
         )
 
-        print()
+        logger.debug()
 
-        print("=" * 70)
+        logger.debug("=" * 70)
 
-        print("Hybrid Retrieval Debug")
+        logger.debug("Hybrid Retrieval Debug")
 
-        print("=" * 70)
+        logger.debug("=" * 70)
 
         for rank, result in enumerate(
             results,
             start=1,
         ):
 
-            print()
+            logger.debug()
     
-            print(f"{rank}. {result.assessment.name}")
+            logger.debug(f"{rank}. {result.assessment.name}")
     
-            print(
+            logger.debug(
                 f"Semantic : {result.semantic_score:.3f}"
             )
     
-            print(
+            logger.debug(
                 f"Keyword  : {result.keyword_score:.3f}"
             )
     
-            print(
+            logger.debug(
                 f"Final     : {result.score:.3f}"
             )
     
-        print("=" * 70)
+        logger.debug("=" * 70)

@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parents[2]
 PROMPT_PATH = ROOT / "app" / "prompts" / "system_prompt.txt"
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 
 class GeminiClient:

@@ -61,5 +61,6 @@ class EmbeddingService:
         return vector / norm
 
 
+@lru_cache(maxsize=1)
 def get_embedding_service() -> EmbeddingService:
     return EmbeddingService()

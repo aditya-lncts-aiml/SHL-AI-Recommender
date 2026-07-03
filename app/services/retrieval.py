@@ -22,7 +22,46 @@ TYPE_BOOST = 2
 SKILL_BOOST = 2
 
 
+SALES_TERMS = {
+    "sales",
+    "salesperson",
+    "sales executive",
+    "sales manager",
+    "business development",
+    "account executive",
+    "inside sales",
+    "field sales",
+    "bdm",
+    "relationship manager"
+}
 
+TECH_TERMS = {
+    "java",
+    "python",
+    "developer",
+    "software",
+    "backend",
+    "frontend",
+    "coding",
+    "engineer",
+    "programming"
+}
+LEADERSHIP_TERMS = {
+    "leader",
+    "leadership",
+    "manager",
+    "director",
+    "team lead",
+    "project manager"
+}
+
+GRADUATE_TERMS = {
+    "graduate",
+    "campus",
+    "intern",
+    "fresher",
+    "entry level"
+}
 
 
 logger = logging.getLogger(__name__)

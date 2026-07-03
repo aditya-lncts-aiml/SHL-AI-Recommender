@@ -22,6 +22,9 @@ TYPE_BOOST = 2
 SKILL_BOOST = 2
 
 
+
+
+
 logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -408,9 +411,21 @@ class Retriever:
             # Category Match
             # ------------------------------------------
 
-            if assessment.category:
 
-                if assessment.category.lower() in normalized_query:
+            if any(term in normalized_query for term in SALES_TERMS):
+                if assessment.category == "Sales":
+                    score += CATEGORY_BOOST
+
+            if any(term in normalized_query for term in TECH_TERMS):
+                if assessment.category == "Technical Skills":
+                    score += CATEGORY_BOOST
+
+            if any(term in normalized_query for term in LEADERSHIP_TERMS):
+                if assessment.category == "Leadership":
+                    score += CATEGORY_BOOST
+
+            if any(term in normalized_query for term in GRADUATE_TERMS):
+                if assessment.category == "Graduate":
                     score += CATEGORY_BOOST
 
             # ------------------------------------------
